@@ -1,13 +1,89 @@
-Checkout 代码
-    ↓
-设置 Python 3.12
-    ↓
-安装依赖（pandas, openpyxl, rapidfuzz, pyinstaller）
-    ↓
-运行 build.py 打包
-    ↓
-验证 dist/fcp.exe 存在
-    ↓
-创建 GitHub Release
-    ↓
-上传 fcp.exe 到 Release
+name: Build and Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+      prerelease:
+        description: 'Mark as prerelease'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+        
+    - name: Create virtual environment
+      run: |
+        python -m venv venv
+        venv\Scripts\activate
+        python -m pip install --upgrade pip
+        
+    - name: Install dependencies
+      run: |
+        venv\Scripts\activate
+        pip install -r requirements.txt
+        pip install pyinstaller
+        
+    - name: Build executable
+      run: |
+        venv\Scripts\activate
+        python build.py
+        
+    - name: Verify build output
+      run: |
+        if (Test-Path "dist/fcp.exe") {
+          Write-Host "Build successful: dist/fcp.exe"
+          $size = (Get-Item dist/fcp.exe).Length / 1MB
+          Write-Host "File size: $([math]::Round($size, 2)) MB"
+          
+          # 检查文件大小是否合理（应该小于 200MB）
+          if ($size -gt 200) {
+            Write-Warning "File size is larger than expected ($([math]::Round($size, 2)) MB)"
+          }
+        } else {
+          Write-Error "Build failed: dist/fcp.exe not found"
+          exit 1
+        }
+        
+    - name: Create Release
+      id: create_release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ github.event.inputs.version }}
+        name: Release ${{ github.event.inputs.version }}
+        draft: false
+        prerelease: ${{ github.event.inputs.prerelease }}
+        files: dist/fcp.exe
+        body: |
+          ## Excel 数据分类工具 ${{ github.event.inputs.version }}
+          
+          ### 更新内容
+          - 自动打包发布
+          
+          ### 使用方法
+          1. 下载 `fcp.exe`
+          2. 双击运行即可启动图形界面
+          3. 选择类别文件和数据文件
+          4. 设置列号和行范围
+          5. 点击"开始分类"
+          
+          ### 系统要求
+          - Windows 10/11
+          - 无需安装 Python 或其他依赖
+          
+          ---
+          由 GitHub Actions 自动构建

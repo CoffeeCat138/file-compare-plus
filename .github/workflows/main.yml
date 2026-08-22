@@ -1,72 +1,13 @@
-name: Build and Release
-
-on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Release version (e.g., v1.0.0)'
-        required: true
-        default: 'v0.0.0'
-      # 可选：手动指定是否预发布
-      prerelease:
-        description: 'Mark as pre-release'
-        required: false
-        default: false
-        type: boolean
-
-permissions:
-  contents: write           # 允许创建 Release 并上传附件
-
-jobs:
-  build:
-    runs-on: windows-latest  # 使用 Windows 环境以生成 .exe
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'   # 根据项目选择合适版本
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pyinstaller
-          # 如果有 requirements.txt 则安装项目依赖
-          if (Test-Path requirements.txt) {
-            pip install -r requirements.txt
-          }
-
-      - name: Build executable with PyInstaller
-        run: |
-          # 假设程序入口为 main.py，输出单文件可执行程序
-          # 可根据需要调整 PyInstaller 参数（如 --icon、--add-data 等）
-          pyinstaller --onefile --name "fcp" fcp.py
-        # 如果入口文件不同，请修改 main.py 为实际文件名
-
-      - name: Set release version
-        id: version
-        shell: bash
-        run: |
-          if [ "${{ github.event_name }}" == "push" ]; then
-            VERSION="${{ github.ref_name }}"
-          else
-            VERSION="${{ github.event.inputs.version }}"
-          fi
-          echo "VERSION=${VERSION}" >> $GITHUB_ENV
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-
-      - name: Create Release and Upload Asset
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ env.VERSION }}
-          name: Release ${{ env.VERSION }}
-          draft: false
-          prerelease: ${{ github.event.inputs.prerelease || false }}
-          files: |
-            dist/*.exe       # 上传所有 .exe 文件（通常只有一个）
-          generate_release_notes: true   # 自动生成 Release Notes
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+Checkout 代码
+    ↓
+设置 Python 3.12
+    ↓
+安装依赖（pandas, openpyxl, rapidfuzz, pyinstaller）
+    ↓
+运行 build.py 打包
+    ↓
+验证 dist/fcp.exe 存在
+    ↓
+创建 GitHub Release
+    ↓
+上传 fcp.exe 到 Release

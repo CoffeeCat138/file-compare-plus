@@ -18,6 +18,8 @@ jobs:
     runs-on: windows-latest
     env:
       PYTHONIOENCODING: utf-8
+    permissions:
+      contents: write
     
     steps:
     - name: Checkout code

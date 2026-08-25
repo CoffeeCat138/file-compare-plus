@@ -29,6 +29,7 @@ def build():
     args = [
         sys.executable, "-m", "PyInstaller",
         "--onefile",           # 单文件模式
+        "--win-private-assemblies",
         "--windowed",          # GUI 模式，不显示控制台
         "--name", "fcp",       # 输出文件名
         "--clean",             # 清理临时文件
